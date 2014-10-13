@@ -112,8 +112,8 @@ float str_cli(FILE *fp, int sockfd, long *len) {
 		time_inv += (recvt.tv_sec)*1000.0 + (recvt.tv_usec)/1000.0;
 		return(time_inv);
 	} else {
-		return(-1);
 		printf("Error in transmission\n");
+		return(-1);
 	}
 }
 

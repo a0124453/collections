@@ -71,6 +71,7 @@ void str_ser(int sockfd) {
 	int end, n = 0;
 	long lseek=0;
 	end = 0;
+	int recvLength = 0;
 	
 	printf("receiving data!\n");
 
@@ -83,20 +84,25 @@ void str_ser(int sockfd) {
 			end = 1;
 			n--;
 		}
-		memcpy((buf+lseek), recvs, n);
-		lseek += n;
-	}
-	ack.num = 1;
-	ack.len = 0;
-	if ((n = send(sockfd, &ack, 2, 0))==-1) {
-			printf("send error!");								//send the ack
+		recvLength = strlen(recvs);
+		memcpy((buf+lseek), recvs, recvLength);
+		ack.num = 1;
+		ack.len = 0;
+		if ((n = send(sockfd, &ack, 2, 0)) == -1) {
+			printf("send error!");
 			exit(1);
+		}
+		lseek += recvLength;
+		//printf("%s\n", recvs);
+		//printf("n: %d\n", n);
+		//printf("lseek: %d\n", lseek);
 	}
+
 	if ((fp = fopen ("myTCPreceive.txt","wt")) == NULL) {
 		printf("File doesn't exit\n");
-		exit(0);
+		exit(1);
 	}
-	fwrite (buf , 1 , lseek , fp);					//write data into file
+	fwrite(buf, 1, lseek, fp);	    //write data into file
 	fclose(fp);
 	printf("a file has been successfully received!\nthe total data received is %d bytes\n", (int)lseek);
 }
