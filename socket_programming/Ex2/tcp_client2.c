@@ -4,11 +4,10 @@ tcp_client.c: the source file of the client in tcp transmission for a large pack
 
 #include "headsock.h"
 
-float str_cli(FILE *fp, int sockfd, long *len);                       //packet transmission fuction
+float str_cli(FILE *fp, int sockfd, long *len);       //packet transmission fuction
 void tv_sub(struct  timeval *out, struct timeval *in);	    //calcu the time interval between out and in
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	int sockfd, ret;
 	float ti, rt;
 	long len;
@@ -31,8 +30,7 @@ int main(int argc, char **argv)
 	printf("canonical name: %s\n", sh->h_name);					//print server's information
 	for (pptr=sh->h_aliases; *pptr != NULL; pptr++)
 		printf("the aliases name is: %s\n", *pptr);
-	switch(sh->h_addrtype)
-	{
+	switch(sh->h_addrtype) {
 		case AF_INET:
 			printf("AF_INET\n");
 		break;
@@ -43,8 +41,7 @@ int main(int argc, char **argv)
         
 	addrs = (struct in_addr **)sh->h_addr_list;
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);                           //create the socket
-	if (sockfd <0)
-	{
+	if (sockfd < 0) {
 		printf("error in socket");
 		exit(1);
 	}
@@ -59,8 +56,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
-	if((fp = fopen ("myfile.txt","r+t")) == NULL)		//open local file to read the data
-	{
+	if((fp = fopen ("myfile.txt","r+t")) == NULL) {		//open local file to read the data
 		printf("File doesn't exit\n");
 		exit(0);
 	}
@@ -73,12 +69,10 @@ int main(int argc, char **argv)
 
 	close(sockfd);
 	fclose(fp);
-//}
 	exit(0);
 }
 
-float str_cli(FILE *fp, int sockfd, long *len)
-{
+float str_cli(FILE *fp, int sockfd, long *len) {
 	long lsize;
 	struct pack_so sends;
 	struct ack_so acks;
@@ -105,29 +99,26 @@ float str_cli(FILE *fp, int sockfd, long *len)
 	if (n == -1)	{			
 		printf("error sending data\n");
 		exit(1);
+	} else {
+		printf("%d data sent", n);
 	}
-	else printf("%d data sent", n);
 	if ((n=recv(sockfd, &acks, 2, 0)) == -1) {	        //receive ACK or NACK
 		printf("error receiving data\n");
 		exit(1);
 	}
-	if ((acks.len == 0) && (acks.num == 1))         //if it is ACK
-	{
-		gettimeofday(&recvt, NULL);                                                         //get current time
-		tv_sub(&recvt, &sendt);                                                                 // get the whole trans time
+	if ((acks.len == 0) && (acks.num == 1)) {        //if it is ACK
+		gettimeofday(&recvt, NULL);    //get current time
+		tv_sub(&recvt, &sendt);    // get the whole trans time
 		time_inv += (recvt.tv_sec)*1000.0 + (recvt.tv_usec)/1000.0;
 		return(time_inv);
-	}
-	else	{
+	} else {
 		return(-1);
 		printf("Error in transmission\n");
 	}
 }
 
-void tv_sub(struct  timeval *out, struct timeval *in)
-{
-	if ((out->tv_usec -= in->tv_usec) <0)
-	{
+void tv_sub(struct  timeval *out, struct timeval *in) {
+	if ((out->tv_usec -= in->tv_usec) <0) {
 		--out ->tv_sec;
 		out ->tv_usec += 1000000;
 	}

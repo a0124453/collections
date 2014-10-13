@@ -53,8 +53,9 @@ int main(void) {
 			str_ser(con_fd);    //receive packet and response
 			close(con_fd);
 			exit(0);
+		} else {
+			close(con_fd);    //parent process
 		}
-		else close(con_fd);    //parent process
 	}
 	close(sockfd);
 	exit(0);
