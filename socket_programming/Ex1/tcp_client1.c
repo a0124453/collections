@@ -6,8 +6,7 @@ tcp_client.c: the source file of the client in tcp transmission
 
 void str_cli(FILE *fp, int sockfd);        //used for socket transmission             
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	int sockfd, ret;
 	struct sockaddr_in ser_addr;
 	char ** pptr;
@@ -18,17 +17,17 @@ int main(int argc, char **argv)
 		printf("parameters not match");
 	}
 
-	sh = gethostbyname(argv[1]);	                            //get host's information from the input argument
+	sh = gethostbyname(argv[1]);  //get host's information from the input argument
 	if (sh == NULL) {
 		printf("error when gethostby name");
 		exit(0);
 	}
 
 	printf("canonical name: %s\n", sh->h_name);
-	for (pptr=sh->h_aliases; *pptr != NULL; pptr++)
+	for (pptr=sh->h_aliases; *pptr != NULL; pptr++) {  // print any aliases
 		printf("the aliases name is: %s\n", *pptr);
-	switch(sh->h_addrtype)
-	{
+	}
+	switch (sh->h_addrtype) {
 		case AF_INET:
 			printf("AF_INET\n");
 		break;
@@ -37,16 +36,15 @@ int main(int argc, char **argv)
 		break;
 	}
         
-	addrs = (struct in_addr **)sh->h_addr_list;                       //get the server(receiver)'s ip address
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);                           //create the socket
-	if (sockfd <0)
-	{
+	addrs = (struct in_addr **)sh->h_addr_list;  //get the server(receiver)'s ip address
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);   //create the socket
+	if (sockfd <0) {
 		printf("error in socket");
 		exit(1);
 	}
 	ser_addr.sin_family = AF_INET;                                                      
-	ser_addr.sin_port = htons(MYTCP_PORT);
-	memcpy(&(ser_addr.sin_addr.s_addr), *addrs, sizeof(struct in_addr));	
+	ser_addr.sin_port = htons(MYTCP_PORT);  //TCP port is defined in headsock.h; set port_no to be at 'network order'
+	memcpy(&(ser_addr.sin_addr.s_addr), *addrs, sizeof(struct in_addr));  //destination address
 	bzero(&(ser_addr.sin_zero), 8);
 	ret = connect(sockfd, (struct sockaddr *)&ser_addr, sizeof(struct sockaddr));         //connect the socket with the server(receiver)
 	if (ret != 0) {
@@ -61,8 +59,7 @@ int main(int argc, char **argv)
 	exit(0);
 }
 
-void str_cli(FILE *fp, int sockfd)
-{
+void str_cli(FILE *fp, int sockfd) {
 	char sends[MAXSIZE];
 
 	printf("Please input a string (less than 50 character):\n");
