@@ -87,7 +87,7 @@ void str_ser(int sockfd) {
 		memcpy((buf+lseek), recvs, n);
 		ack.num = 1;
 		ack.len = 0;
-		if ((recieveN = send(sockfd, &ack, 2, 0)) == -1) {
+		if ((receiveN = send(sockfd, &ack, 2, 0)) == -1) {
 			printf("send error!");
 			exit(1);
 		}
