@@ -4,20 +4,26 @@ tcp_ser.c: the source file of the server in tcp transmission
 
 
 #include "headsock.h"
+#include <stdlib.h>
 
 #define BACKLOG 10
 
-void str_ser(int sockfd);                                                        // transmitting and receiving function
+void str_ser(int sockfd, int errorRate);                                     // transmitting and receiving function
 
-int main(void)
-{
+int main(int argc, char **argv) {
 	int sockfd, con_fd, ret;
 	struct sockaddr_in my_addr;
 	struct sockaddr_in their_addr;
 	int sin_size;
+	int errorRate = 0;
 
-//	char *buf;
 	pid_t pid;
+	
+	if (argc != 2) {
+		printf("parameters not match");
+	}
+
+	errorRate = atoi(argv[1]);
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);          //create socket
 	if (sockfd <0) {
@@ -52,7 +58,7 @@ int main(void)
 
 		if ((pid = fork())==0) {  // creat acception process
 			close(sockfd);
-			str_ser(con_fd);                                          //receive packet and response
+			str_ser(con_fd, errorRate);                                          //receive packet and response
 			close(con_fd);
 			exit(0);
 		} else {
@@ -63,7 +69,7 @@ int main(void)
 	exit(0);
 }
 
-void str_ser(int sockfd) {
+void str_ser(int sockfd, int errorRate) {
 	char buf[BUFSIZE];
 	FILE *fp;
 	char recvs[DATALEN];
@@ -72,6 +78,10 @@ void str_ser(int sockfd) {
 	int recieveN = 0;
 	long lseek=0;
 	end = 0;
+	int packageIdx = 0;
+	if (errorRate >= 90) {
+		errorRate = 90;
+	}
 	
 	printf("receiving data!\n");
 
@@ -85,13 +95,19 @@ void str_ser(int sockfd) {
 			n--;
 		}
 		memcpy((buf+lseek), recvs, n);
-		ack.num = 1;
-		ack.len = 0;
+		if (packageIdx < errorRate) {
+			ack.num = 0;
+			ack.len = 0;
+		} else {
+			lseek += n;
+			ack.num = 1;
+			ack.len = 0;
+		}
 		if ((recieveN = send(sockfd, &ack, 2, 0)) == -1) {
-			printf("send error!");
+			printf("ack not successful!");
 			exit(1);
 		}
-		lseek += n;
+		packageIdx = (++packageIdx) % 100;
 	}
 
 	if ((fp = fopen ("myTCPreceive.txt","wt")) == NULL) {

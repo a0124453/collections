@@ -4,16 +4,16 @@ tcp_client.c: the source file of the client in tcp transmission
 
 #include "headsock.h"
 
-float str_cli(FILE *fp, int sockfd, long *len);    //transmission function
+float str_cli(FILE *fp, int sockfd, long *len, int *numberOfErrors);    //transmission function
 void tv_sub(struct  timeval *out, struct timeval *in);    //calcu the time interval between out and in
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	int sockfd, ret;
+	int numberOfErrors = 0;
 	float ti, rt;
 	long len;
 	struct sockaddr_in ser_addr;
-	char ** pptr;
+	char **pptr;
 	struct hostent *sh;
 	struct in_addr **addrs;
 	FILE *fp;
@@ -63,16 +63,17 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
-	ti = str_cli(fp, sockfd, &len);     //perform the transmission and receiving
-	rt = (len/(float)ti);    //caculate the average transmission rate
+	ti = str_cli(fp, sockfd, &len, &numberOfErrors);     //perform the transmission and receiving
+	rt = (len/(float)ti);                                //caculate the average transmission rate
 	printf("Time(ms) : %.3f, Data sent(byte): %d\nData rate: %f (Kbytes/s)\n", ti, (int)len, rt);
+	printf("%d errors in transmission\n", numberOfErrors);
 
 	close(sockfd);
 	fclose(fp);
 	exit(0);
 }
 
-float str_cli(FILE *fp, int sockfd, long *len) {
+float str_cli(FILE *fp, int sockfd, long *len, int *numberOfErrors) {
 	char *buf;
 	long lsize, ci;
 	char sends[DATALEN];
@@ -80,6 +81,7 @@ float str_cli(FILE *fp, int sockfd, long *len) {
 	int n, slen;
 	float time_inv = 0.0;
 	struct timeval sendt, recvt;
+	(*numberOfErrors) = 0;
 	ci = 0;
 
 	fseek(fp , 0 , SEEK_END);
@@ -98,7 +100,7 @@ float str_cli(FILE *fp, int sockfd, long *len) {
     /*** the whole file is loaded in the buffer. ***/
 	buf[lsize] ='\0';									//append the end byte
 	gettimeofday(&sendt, NULL);							//get the current time
-	while (ci<= lsize) {
+	while (ci <= lsize) {
 		if ((lsize+1-ci) <= DATALEN)
 			slen = lsize+1-ci;
 		else 
@@ -113,22 +115,20 @@ float str_cli(FILE *fp, int sockfd, long *len) {
 		if ((n= recv(sockfd, &ack, 2, 0)) == -1) {
 			printf("error when receiving\n");
 		} else if (ack.num != 1|| ack.len != 0) {
-			printf("error in transmission\n");
+			(*numberOfErrors)++;
 		} else {
 			ci += slen;
 		}
 	}
 	gettimeofday(&recvt, NULL);
 	*len= ci;                                                         //get current time
-	tv_sub(&recvt, &sendt);                                                                 // get the whole trans time
+	tv_sub(&recvt, &sendt);                                           // get the whole trans time
 	time_inv += (recvt.tv_sec)*1000.0 + (recvt.tv_usec)/1000.0;
 	return (time_inv);
 }
 
-void tv_sub(struct  timeval *out, struct timeval *in)
-{
-	if ((out->tv_usec -= in->tv_usec) <0)
-	{
+void tv_sub(struct  timeval *out, struct timeval *in) {
+	if ((out->tv_usec -= in->tv_usec) <0) {
 		--out ->tv_sec;
 		out ->tv_usec += 1000000;
 	}
