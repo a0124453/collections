@@ -31,7 +31,7 @@ public class QueryTest {
         }
 
         // jpql statement
-        Query q = em.createQuery("SELECT m.title, COUNT(r) FROM Movie m INNER JOIN Review r GROUP BY m.title");
+        Query q = em.createQuery("SELECT r.movie.title, COUNT(r) FROM Review r GROUP BY r.movie.title");
         List<Object[]> resultList = q.getResultList();
         for (int i=0;i<resultList.size();i++){
             System.out.println(resultList.get(i)[0] + ": " + resultList.get(i)[1]);
