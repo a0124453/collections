@@ -55,6 +55,9 @@ public class ReviewService {
     
     public Collection<Review> findReviewsByTitle(String title) {
         Query q = em.createQuery("SELECT r FROM Review r WHERE r.movie.title = :movieTitle").setParameter("movieTitle", title);
+        // this is unsafe
+        //String queryString = "SELECT r FROM Review r WHERE r.movie.title = '" + title + "'";
+        //Query q = em.createQuery(queryString);
         return (Collection<Review>)q.getResultList();
     }
 }
