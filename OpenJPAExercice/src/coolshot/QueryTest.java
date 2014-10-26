@@ -1,6 +1,6 @@
 /**
- * Name   1 :
- * Matric 1 :
+ * Name   1 : Gu Junchao
+ * Matric 1 : A0105750N
  *
  * Name   2 : 
  * Matric 2 :
@@ -23,13 +23,6 @@ public class QueryTest {
         
         // count all reviews for each movie
         System.out.println("Review count: ");
-        //
-        // Task 3: your code here
-        //
-        // 1. Create a query
-        // 2. Get result list
-        // 3. Iterate through the result list and print out
-        //
 
         // use movie service directly
         Collection<Movie> movies = movieService.findAllMovies();
@@ -38,7 +31,7 @@ public class QueryTest {
         }
 
         // jpql statement
-        Query q = em.createQuery("SELECT m, COUNT(r) FROM Movie m INNER JOIN m.reviews r");
+        Query q = em.createQuery("SELECT m.title, COUNT(r) FROM Movie m INNER JOIN Review r GROUP BY m.title");
         List<Object[]> resultList = q.getResultList();
         for (int i=0;i<resultList.size();i++){
             System.out.println(resultList.get(i)[0] + ": " + resultList.get(i)[1]);
@@ -56,7 +49,7 @@ public class QueryTest {
             }
         }
 
-        // jpql
+        // jpql -- not working
         Query query = em.createQuery("SELECT r.movie.title, COUNT(r) FROM Review r GROUP BY r.movie.title HAVING COUNT(r) > 2 ");
         List<Object[]> result2List = query.getResultList();
         for (int i=0;i<result2List.size();i++){

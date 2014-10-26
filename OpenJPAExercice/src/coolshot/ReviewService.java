@@ -1,6 +1,6 @@
 /**
- * Name   1 :
- * Matric 1 :
+ * Name   1 : Gu Junchao
+ * Matric 1 : A0105750N
  *
  * Name   2 : 
  * Matric 2 :
