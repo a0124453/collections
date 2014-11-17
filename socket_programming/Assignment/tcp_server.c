@@ -103,10 +103,7 @@ void str_ser(int sockfd, int errorRate) {
 			ack.num = 1;
 			ack.len = 0;
 		}
-		if ((recieveN = send(sockfd, &ack, 2, 0)) == -1) {
-			printf("ack not successful!");
-			exit(1);
-		}
+		send(sockfd, &ack, 2, 0);
 		packageIdx = (++packageIdx) % 100;
 	}
 
