@@ -1,0 +1,3 @@
+[submodule "nodeschool"]
+	path = nodeschool
+	url = https://github.com/franklingu/nodeschool.git
