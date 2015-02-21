@@ -416,6 +416,9 @@ StrategyShmemSize(void)
 	/* size of the shared replacement strategy control block */
 	size = add_size(size, MAXALIGN(sizeof(BufferStrategyControl)));
 
+	/* initialize entries */
+	size = add_size(size, mul_size(NBuffers, sizeof(BufferLRUEntry)));
+
 	return size;
 }
 
