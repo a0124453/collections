@@ -221,7 +221,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 {
 	volatile BufferDesc *buf;
 	Latch	   *bgwriterLatch;
-	int			trycounter;
+    BufferLRUEntry *curr = StrategyControl->tail;
 
 	/*
 	 * If given a strategy object, see whether it can select a buffer. We
@@ -298,55 +298,27 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		UnlockBufHdr(buf);
 	}
 
-	/* Nothing on the freelist, so run the "clock sweep" algorithm */
-	trycounter = NBuffers;
-	for (;;)
+	/* Nothing on the freelist, so select one buf from the stack */
+	while (curr != NULL)
 	{
-		buf = &BufferDescriptors[StrategyControl->nextVictimBuffer];
+		buf = &BufferDescriptors[curr->buf_id];
 
-		if (++StrategyControl->nextVictimBuffer >= NBuffers)
-		{
-			StrategyControl->nextVictimBuffer = 0;
-			StrategyControl->completePasses++;
-		}
-
-		/*
-		 * If the buffer is pinned or has a nonzero usage_count, we cannot use
-		 * it; decrement the usage_count (unless pinned) and keep scanning.
-		 */
 		LockBufHdr(buf);
 		if (buf->refcount == 0)
 		{
-			if (buf->usage_count > 0)
-			{
-				buf->usage_count--;
-				trycounter = NBuffers;
-			}
-			else
-			{
-				/* Found a usable buffer */
-				if (strategy != NULL)
-                {
-					AddBufferToRing(strategy, buf);
-                    StrategyUpdateAccessedBuffer(buf->buf_id, false);
-                }
-				return buf;
-			}
-		}
-		else if (--trycounter == 0)
-		{
-			/*
-			 * We've scanned all the buffers without making any state changes,
-			 * so all the buffers are pinned (or were when we looked at them).
-			 * We could hope that someone will free one eventually, but it's
-			 * probably better to fail than to risk getting stuck in an
-			 * infinite loop.
-			 */
-			UnlockBufHdr(buf);
-			elog(ERROR, "no unpinned buffers available");
+			if (strategy != NULL)
+            {
+				AddBufferToRing(strategy, buf);
+                StrategyUpdateAccessedBuffer(buf->buf_id, false);
+            }
+			return buf;
 		}
 		UnlockBufHdr(buf);
+        curr = curr->prev;
 	}
+
+    /* no available buf to replace */
+    elog(ERROR, "no unpinned buffers available");
 }
 
 /*
