@@ -26,6 +26,8 @@ typedef struct BufferLRUEntry
 	int            buf_id;
 } BufferLRUEntry;
 
+static BufferLRUEntry *LRUStack = NULL;
+
 /*
  * The shared freelist control information.
  */
@@ -433,6 +435,7 @@ void
 StrategyInitialize(bool init)
 {
 	bool		found;
+	bool        stackFound;
 
 	/*
 	 * Initialize the shared buffer lookup hashtable.
@@ -484,6 +487,16 @@ StrategyInitialize(bool init)
 	}
 	else
 		Assert(!init);
+
+	LRUStack = (BufferLRUEntry *)ShmemInitStruct("LRU stack", NBuffers * sizeof(BufferLRUEntry), &stackFound);
+	if (!stackFound)
+	{
+		Assert(init);
+	}
+	else
+	{
+		Assert(!init);
+	}
 }
 
 
