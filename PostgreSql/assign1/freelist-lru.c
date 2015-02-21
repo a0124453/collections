@@ -21,9 +21,9 @@
 /* Entry in LRU stack */
 typedef struct BufferLRUEntry
 {
-	BufferLRUEntry *prev;
-	BufferLRUEntry *next;
-	int buf_id;
+	struct BufferLRUEntry *prev;
+	struct BufferLRUEntry *next;
+	int            buf_id;
 } BufferLRUEntry;
 
 /*
