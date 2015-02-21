@@ -232,6 +232,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		buf = GetBufferFromRing(strategy);
 		if (buf != NULL)
 		{
+			StrategyUpdateAccessedBuffer(buf->buf_id, false);
 			*lock_held = false;
 			return buf;
 		}
