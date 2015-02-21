@@ -144,14 +144,13 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         {
             curr->prev->next = curr->next;
         }
-        pfree(curr);
         return ;
     }
     /* to be inserted or updated */
     if (curr == NULL)
     {
         /* to be inserted */
-        curr = (BufferLRUEntry *)palloc(sizeof(BufferLRUEntry));
+        curr = (BufferLRUEntry *)&LRUStack[buf_id];
         curr->buf_id = buf_id;
         if (StrategyControl->head == NULL)
         {
