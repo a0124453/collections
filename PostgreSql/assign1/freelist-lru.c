@@ -21,9 +21,9 @@
 /* Entry in LRU stack */
 typedef struct BufferLRUEntry
 {
-    BufferLRUEntry *prev;
-    BufferLRUEntry *next;
-    int buf_id;
+	BufferLRUEntry *prev;
+	BufferLRUEntry *next;
+	int buf_id;
 } BufferLRUEntry;
 
 /*
@@ -38,8 +38,8 @@ typedef struct
 	int			lastFreeBuffer; /* Tail of list of unused buffers */
 
     /* head and tail pointer for shared LRU stack */
-    BufferLRUEntry *head;
-    BufferLRUEntry *tail;
+	BufferLRUEntry *head;
+	BufferLRUEntry *tail;
 
 	/*
 	 * NOTE: lastFreeBuffer is undefined when firstFreeBuffer is -1 (that is,
@@ -289,10 +289,10 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		if (buf->refcount == 0)
 		{
 			if (strategy != NULL)
-            {
+			{
 				AddBufferToRing(strategy, buf);
-                StrategyUpdateAccessedBuffer(buf->buf_id, false);
-            }
+				StrategyUpdateAccessedBuffer(buf->buf_id, false);
+			}
 			return buf;
 		}
 		UnlockBufHdr(buf);
@@ -309,16 +309,16 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 			if (strategy != NULL)
             {
 				AddBufferToRing(strategy, buf);
-                StrategyUpdateAccessedBuffer(buf->buf_id, false);
+				StrategyUpdateAccessedBuffer(buf->buf_id, false);
             }
 			return buf;
 		}
 		UnlockBufHdr(buf);
-        curr = curr->prev;
+		curr = curr->prev;
 	}
 
     /* no available buf to replace */
-    elog(ERROR, "no unpinned buffers available");
+	elog(ERROR, "no unpinned buffers available");
 }
 
 /*
@@ -340,7 +340,7 @@ StrategyFreeBuffer(volatile BufferDesc *buf)
 			StrategyControl->lastFreeBuffer = buf->buf_id;
 		StrategyControl->firstFreeBuffer = buf->buf_id;
 	}
-    StrategyUpdateAccessedBuffer(buf->buf_id, true);
+	StrategyUpdateAccessedBuffer(buf->buf_id, true);
 
 	LWLockRelease(BufFreelistLock);
 }
@@ -465,8 +465,8 @@ StrategyInitialize(bool init)
 		StrategyControl->lastFreeBuffer = NBuffers - 1;
 
         /* initialize head and tail to be null */
-        StrategyControl->head = NULL;
-        StrategyControl->tail = NULL;
+		StrategyControl->head = NULL;
+		StrategyControl->tail = NULL;
 
 		/* Initialize the clock sweep pointer */
 		StrategyControl->nextVictimBuffer = 0;
