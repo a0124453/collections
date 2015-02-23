@@ -413,7 +413,7 @@ StrategyShmemSize(void)
 	size = add_size(size, MAXALIGN(sizeof(BufferStrategyControl)));
 
 	/* cs3223 - size of the LRU stack */
-	size = add_size(size, mul_size(NBuffers, sizeof(StackEntry)));
+	size = add_size(size, mul_size(NBuffers, sizeof(LRUStackEntry)));
 
 	return size;
 }
