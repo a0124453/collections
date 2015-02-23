@@ -117,11 +117,10 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
 	}
     if (delete)  // delete the entry
     {
-    	printf("Delete buf %d\n", buf_id);
+    	printf("Insert buf: %d, Top: %d, Bottom: %d \n", buf_id, StrategyControl->stackTop, StrategyControl->stackBottom);
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->buf_id == ENTRY_NOT_IN_STACK)
         {
-        	elog(ERROR, "A possible bug indication: L124");
         	return;
         }
         if (buf_id == StrategyControl->stackTop)
@@ -311,6 +310,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		if(iterator == ENTRY_NOT_IN_STACK)
 		{
 			UnlockBufHdr(buf);
+			printf("Top: %d, Bottom: %d \n", StrategyControl->stackTop, StrategyControl->stackBottom);
 			elog(ERROR, "no unpinned buffers available");
 		}
 		UnlockBufHdr(buf);
