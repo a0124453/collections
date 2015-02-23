@@ -36,8 +36,8 @@ typedef struct
 	 */
 
 	/* cs3223 */
-	int		stackTop;     	/* top of the LRU stack (MRU) */
-	int		stackBottom;   	/* bottom of the LRU stack (LRU) */
+	int		    stackTop;     	/* top of the LRU stack (MRU) */
+	int		    stackBottom;   	/* bottom of the LRU stack (LRU) */
 
 	/*
 	 * Statistics.	These counters should be wide enough that they can't
@@ -88,25 +88,103 @@ typedef struct BufferAccessStrategyData
 	Buffer		buffers[1];		/* VARIABLE SIZE ARRAY */
 }	BufferAccessStrategyData;
 
+#define ENTRY_NOT_IN_STACK -1
+typedef struct LRUStackEntry
+{
+	int			buf_id;
+	int			stack_next;
+	int			stack_prev;
+} LRUStackEntry;
+static LRUStackEntry *LRUStack = NULL;
+
 
 /* Prototypes for internal functions */
 static volatile BufferDesc *GetBufferFromRing(BufferAccessStrategy strategy);
 static void AddBufferToRing(BufferAccessStrategy strategy,
 				volatile BufferDesc *buf);
 
-/* cs3223 */
-#define NOT_IN_STACK -1
-typedef struct
+// cs3223
+// StrategyUpdateAccessedBuffer 
+// Called by bufmgr when a buffer page is accessed.
+// Adjusts the position of buffer (identified by buf_id) in the LRU stack if delete is false;
+// otherwise, delete buffer buf_id from the LRU stack.
+void
+StrategyUpdateAccessedBuffer(int buf_id, bool delete)
 {
-	int			buf_id;
-	int			stack_next;
-	int			stack_prev;
-} StackEntry;
-static StackEntry *LRU_Stack = NULL;
-
-void StrategyAdjustStack(int buf_id, bool delete)
-{
-	StrategyUpdateAccessedBuffer(buf_id, delete);
+	if (buf_id >= NBuffers || buf_id < 0)
+	{
+		return;
+	}
+    if (delete)  // delete the entry
+    {
+        LRUStackEntry *current = &LRUStack[buf_id];
+        if (current->stack_prev == ENTRY_NOT_IN_STACK
+        	  && current->stack_next == ENTRY_NOT_IN_STACK)
+        {
+        	elog(ERROR, "A possible bug indication: L124");
+        	return;
+        }
+        if (buf_id == StrategyControl->stackTop)
+        {
+        	StrategyControl->stackTop = current->stack_next;
+        }
+        if (buf_id == StrategyControl->stackBottom)
+        {
+        	StrategyControl->stackBottom = current->stack_prev;
+        }
+        if (current->stack_prev != ENTRY_NOT_IN_STACK)
+        {
+        	(&LRUStack[current->stack_prev])->stack_next = ENTRY_NOT_IN_STACK;
+        }
+        if (current->stack_next != ENTRY_NOT_IN_STACK)
+        {
+        	(&LRUStack[current->stack_next])->stack_prev = ENTRY_NOT_IN_STACK;
+        }
+        current->stack_prev = ENTRY_NOT_IN_STACK;
+        current->stack_next = ENTRY_NOT_IN_STACK;
+        current->buf_id = ENTRY_NOT_IN_STACK;
+    }
+    else  // update or insert the entry
+    {
+        LRUStackEntry *current = &LRUStack[buf_id];
+        if (current->buf_id == ENTRY_NOT_IN_STACK)  // insert
+        {
+        	current->buf_id = buf_id;
+        	if (StrategyControl->stackTop == ENTRY_NOT_IN_STACK)
+        	{
+        		StrategyControl->stackTop = buf_id;
+        	}
+        	else
+        	{
+        		(&LRUStack[StrategyControl->stackTop])->stack_prev = current->buf_id;
+        		current->stack_next = StrategyControl->stackTop;
+        		StrategyControl->stackTop = buf_id;
+        	}
+        	if (StrategyControl->stackBottom == ENTRY_NOT_IN_STACK)
+        	{
+        		StrategyControl->stackBottom = buf_id;
+        	}
+        }
+        else  // update
+        {
+        	if (StrategyControl->stackTop == buf_id)
+        	{
+        		return;
+        	}
+        	if (current->stack_prev != ENTRY_NOT_IN_STACK)
+        	{
+        		(&LRUStack[current->stack_prev])->stack_next = current->stack_next;
+        	}
+        	if (current->stack_next != ENTRY_NOT_IN_STACK)
+        	{
+        		(&LRUStack[current->stack_next])->stack_prev = current->stack_prev;
+        	}
+        	(&LRUStack[StrategyControl->stackTop])->stack_prev = current->buf_id;
+        	current->stack_prev = ENTRY_NOT_IN_STACK;
+        	current->stack_next = StrategyControl->stackTop;
+        	StrategyControl->stackTop = buf_id;
+        }
+    }
 }
 
 
@@ -132,8 +210,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 {
 	volatile BufferDesc *buf;
 	Latch	   *bgwriterLatch;
-	int			trycounter;
-	StackEntry *iterator; /* cs3223 */
+	LRUStackEntry *iterator; /* cs3223 */
 
 	/*
 	 * If given a strategy object, see whether it can select a buffer. We
@@ -201,9 +278,10 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		if (buf->refcount == 0 && buf->usage_count == 0)
 		{
 			if (strategy != NULL)
+			{
 				AddBufferToRing(strategy, buf);
-			/* cs3223 - insert buffer into stack */
-			StrategyAdjustStack(buf->buf_id, false);
+				StrategyAdjustStack(buf->buf_id, false);
+			}
 			return buf;
 		}
 		UnlockBufHdr(buf);
@@ -218,8 +296,10 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		if(buf->refcount == 0)
 		{
 			if (strategy != NULL)
-				  AddBufferToRing(strategy, buf);
-			StrategyAdjustStack(buf->buf_id, false);  
+			{
+				AddBufferToRing(strategy, buf);
+				StrategyAdjustStack(buf->buf_id, false);
+			}
 			return buf;
 		}
 		if(StrategyControl->stackTop == buf->buf_id)
@@ -227,113 +307,13 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 			elog(ERROR, "no unpinned buffers available");
 			return NULL;
 		}
-		iterator = &LRU_Stack[buf->buf_id];
+		iterator = &LRUStack[buf->buf_id];
 		UnlockBufHdr(buf);
 		buf = &BufferDescriptors[iterator->stack_prev];
 	}
 
 	/* not reached */
 	return NULL;
-}
-
-
-/*
- * cs3223
- * StrategyAdjustStack: adjust the position of buffer buf_id in the stack if delete is false;
- * otherwise, delete buffer buf_id from the stack.
- */
-void
-StrategyUpdateAccessedBuffer(int buf_id, bool delete)
-{
-	if (delete) {          //delete = true, delete the buffer with buf_id from the stack 
-		StackEntry *current;
-		current = &LRU_Stack[buf_id];
-		if (StrategyControl->stackTop == buf_id) {             //if buf_id is at the top of the stack
-			StrategyControl->stackTop = current->stack_next;
-			StackEntry *stackNext;
-			stackNext = &LRU_Stack[current->stack_next];
-			stackNext->stack_prev = NOT_IN_STACK;
-		} else {												//buf_id not at top of stack
-			StackEntry *stackNext;
-			stackNext = &LRU_Stack[current->stack_prev];
-			stackNext->stack_next = current->stack_next;
-			if (current->stack_next != NOT_IN_STACK) {
-				stackNext->stack_prev = current->stack_prev;
-			}			
-		}
-		if (StrategyControl->stackBottom == buf_id) {			//if buf_id is at the bottom of the stack
-			StrategyControl->stackBottom = current->stack_prev;
-			StackEntry *stackPrev;
-			stackPrev = &LRU_Stack[current->stack_prev];
-			stackPrev->stack_next = NOT_IN_STACK;
-		} else {
-			StackEntry *stackNext;
-			stackNext = &LRU_Stack[current->stack_next];
-			stackNext->stack_prev = current->stack_prev;
-			if (current->stack_prev != NOT_IN_STACK) {
-				StackEntry *stackPrev;
-				stackPrev = &LRU_Stack[current->stack_prev];
-				stackPrev->stack_next = current->stack_next;
-			}
-		}
-		current->stack_next = NOT_IN_STACK;
-		current->stack_prev = NOT_IN_STACK;
-	} else {			   										//delete = false, adjust the position of buffer buf_id 	
-		StackEntry *current;
-		current = &LRU_Stack[buf_id];
-		if (StrategyControl->stackTop != buf_id) {				//buffer buf_id is not at the top of the stack
-			// if (current->stack_next == NOT_IN_STACK && current->stack_prev == NOT_IN_STACK) {
-			// 	current->stack_next = StrategyControl->stackTop;
-			// 	if (StrategyControl->stackTop == NOT_IN_STACK) {
-
-			// 	}
-			// } else if () {
-
-			// }
-			StackEntry *tempStack;
-			tempStack = &LRU_Stack[buf_id];
-		
-			if (tempStack->stack_next == NOT_IN_STACK && tempStack->stack_prev == NOT_IN_STACK)
-			{
-			/*
-			 * The buffer is not on the stack
-			 */
-				tempStack->stack_next = StrategyControl->stackTop;
-				if (StrategyControl->stackTop != NOT_IN_STACK)
-					((StackEntry *)&LRU_Stack[StrategyControl->stackTop])->stack_prev = buf_id;
-				else
-					StrategyControl->stackBottom = buf_id;
-				StrategyControl->stackTop = buf_id;
-			}
-			else
-			{
-				/*
-			 	* The buffer is already on the stack
-			 	* if buffer does not need to remove from the stack,
-			 	* we move the buffer to the top of the stack and update
-			 	* StrategyControl's fields
-			 	*/
-				
-				((StackEntry *)&LRU_Stack[StrategyControl->stackTop])->stack_prev = buf_id;
-				((StackEntry *)&LRU_Stack[tempStack->stack_prev])->stack_next = tempStack->stack_next;
-				if(tempStack->stack_next != NOT_IN_STACK)
-				{
-					((StackEntry *)&LRU_Stack[tempStack->stack_next])->stack_prev = tempStack->stack_prev;
-				}
-				// if the interested buffer is at bottom of the stack
-				if (StrategyControl->stackBottom == buf_id)
-				{
-					StrategyControl->stackBottom = tempStack->stack_prev;
-				}
-				// update the current buffer pointer
-				tempStack->stack_prev = NOT_IN_STACK;
-				tempStack->stack_next = StrategyControl->stackTop;
-				StrategyControl->stackTop = buf_id;
-		}	
-
-		}
-	}
-	//elog(ERROR, "StrategyAdjustStack: Implement me");
 }
 
 
@@ -356,7 +336,7 @@ StrategyFreeBuffer(volatile BufferDesc *buf)
 			StrategyControl->lastFreeBuffer = buf->buf_id;
 		StrategyControl->firstFreeBuffer = buf->buf_id;
 		/* cs3223 - delete it from LRU stack */
-		StrategyAdjustStack(buf->buf_id, true);
+		StrategyUpdateAccessedBuffer(buf->buf_id, true);
 	}
 
 	LWLockRelease(BufFreelistLock);
@@ -449,7 +429,7 @@ void
 StrategyInitialize(bool init)
 {
 	bool		found;
-	bool		stack_found; /* cs3223 */
+	bool		stackFound; /* cs3223 */
 	int			i; /* cs3223 */
 
 	/*
@@ -490,8 +470,8 @@ StrategyInitialize(bool init)
 		StrategyControl->nextVictimBuffer = 0;
 
 		/* cs3223 - initialize the stack to be empty */
-		StrategyControl->stackTop = NOT_IN_STACK;
-		StrategyControl->stackBottom = NOT_IN_STACK;
+		StrategyControl->stackTop = ENTRY_NOT_IN_STACK;
+		StrategyControl->stackBottom = ENTRY_NOT_IN_STACK;
 
 		/* Clear statistics */
 		StrategyControl->completePasses = 0;
@@ -504,23 +484,23 @@ StrategyInitialize(bool init)
 		Assert(!init);
 
 	/*************************** cs3223 ***********************/
-	LRU_Stack = (StackEntry *) ShmemInitStruct("LRU stack", NBuffers * sizeof(StackEntry), &stack_found);
-	if(!stack_found)
+	LRUStack = (StackEntry *)ShmemInitStruct("LRU stack", NBuffers * sizeof(StackEntry), &stackFound);
+	if(!stackFound)
 	{
 		/*
 		 * Only done once, usually in postmaster
 		 */
 		Assert(init);
 		/*
-		 * initilize entries in LRU_Stack
+		 * initilize entries in LRUStack
 		 */
 		StackEntry *se;
-		se = LRU_Stack;
+		se = LRUStack;
 		for(i = 0; i < NBuffers; se++, i++)
 		{
-			se->stack_next = NOT_IN_STACK;
-			se->stack_prev = NOT_IN_STACK;
-			se->buf_id = i;
+			se->stack_next = ENTRY_NOT_IN_STACK;
+			se->stack_prev = ENTRY_NOT_IN_STACK;
+			se->buf_id = ENTRY_NOT_IN_STACK;
 		}
 	}
 	else
