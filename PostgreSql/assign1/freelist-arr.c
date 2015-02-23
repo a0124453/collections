@@ -278,7 +278,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		 * we'd better check anyway.)
 		 */
 		LockBufHdr(buf);
-		if (buf->refcount == 0 && buf->usage_count == 0)
+		if (buf->refcount == 0)
 		{
 			if (strategy != NULL)
 			{
@@ -622,7 +622,7 @@ GetBufferFromRing(BufferAccessStrategy strategy)
 	 */
 	buf = &BufferDescriptors[bufnum - 1];
 	LockBufHdr(buf);
-	if (buf->refcount == 0 && buf->usage_count <= 1)
+	if (buf->refcount == 0)
 	{
 		strategy->current_was_in_ring = true;
 		return buf;
