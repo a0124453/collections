@@ -209,8 +209,8 @@ volatile BufferDesc *
 StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 {
 	volatile BufferDesc *buf;
-	Latch	   *bgwriterLatch;
-	LRUStackEntry *iterator; /* cs3223 */
+	Latch	            *bgwriterLatch;
+	int                 iterator = StrategyControl->stackBottom; /* cs3223 */
 
 	/*
 	 * If given a strategy object, see whether it can select a buffer. We
@@ -289,7 +289,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 
 
 	/* cs3223 - Nothing on the freelist, so run the LRU algorithm */
-	buf = &BufferDescriptors[StrategyControl->stackBottom];
+	buf = &BufferDescriptors[iterator];
 	for(;;)
 	{
 		LockBufHdr(buf);
@@ -302,15 +302,15 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 			}
 			return buf;
 		}
-		if(StrategyControl->stackTop == buf->buf_id)
+		if(iterator == ENTRY_NOT_IN_STACK)
 		{
 			UnlockBufHdr(buf);
 			elog(ERROR, "no unpinned buffers available");
 			return NULL;
 		}
-		iterator = &LRUStack[buf->buf_id];
 		UnlockBufHdr(buf);
-		buf = &BufferDescriptors[iterator->stack_prev];
+		iterator = &LRUStack[buf->buf_id]->stack_prev;
+		buf = &BufferDescriptors[iterator];
 	}
 
 	/* not reached */
