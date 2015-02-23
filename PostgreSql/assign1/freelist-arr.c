@@ -117,6 +117,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
 	}
     if (delete)  // delete the entry
     {
+    	printf("Delete buf %d\n", buf_id);
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->stack_prev == ENTRY_NOT_IN_STACK
         	  && current->stack_next == ENTRY_NOT_IN_STACK)
@@ -149,6 +150,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->buf_id == ENTRY_NOT_IN_STACK)  // insert
         {
+        	printf("Insert buf %d\n", buf_id);
         	current->buf_id = buf_id;
         	if (StrategyControl->stackTop == ENTRY_NOT_IN_STACK)
         	{
@@ -167,6 +169,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         }
         else  // update
         {
+        	printf("Delete buf %d\n", buf_id);
         	if (StrategyControl->stackTop == buf_id)
         	{
         		return;
@@ -306,10 +309,9 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		{
 			UnlockBufHdr(buf);
 			elog(ERROR, "no unpinned buffers available");
-			return NULL;
 		}
 		UnlockBufHdr(buf);
-		iterator = &LRUStack[buf->buf_id]->stack_prev;
+		iterator = (&LRUStack[buf->buf_id])->stack_prev;
 		buf = &BufferDescriptors[iterator];
 	}
 
