@@ -111,7 +111,7 @@ static void AddBufferToRing(BufferAccessStrategy strategy,
 void
 StrategyUpdateAccessedBuffer(int buf_id, bool delete)
 {
-	if (buf_id >= NBuffers || buf_id < 0)
+	if (buf_id > NBuffers || buf_id < 0)
 	{
 		return;
 	}
@@ -119,8 +119,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
     {
     	printf("Delete buf %d\n", buf_id);
         LRUStackEntry *current = &LRUStack[buf_id];
-        if (current->stack_prev == ENTRY_NOT_IN_STACK
-        	  && current->stack_next == ENTRY_NOT_IN_STACK)
+        if (current->buf_id == ENTRY_NOT_IN_STACK)
         {
         	elog(ERROR, "A possible bug indication: L124");
         	return;
@@ -135,11 +134,11 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         }
         if (current->stack_prev != ENTRY_NOT_IN_STACK)
         {
-        	(&LRUStack[current->stack_prev])->stack_next = ENTRY_NOT_IN_STACK;
+        	(&LRUStack[current->stack_prev])->stack_next = current->stack_next;
         }
         if (current->stack_next != ENTRY_NOT_IN_STACK)
         {
-        	(&LRUStack[current->stack_next])->stack_prev = ENTRY_NOT_IN_STACK;
+        	(&LRUStack[current->stack_next])->stack_prev = current->stack_prev;
         }
         current->stack_prev = ENTRY_NOT_IN_STACK;
         current->stack_next = ENTRY_NOT_IN_STACK;
@@ -150,7 +149,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->buf_id == ENTRY_NOT_IN_STACK)  // insert
         {
-        	printf("Insert buf %d\n", buf_id);
+        	printf("Insert buf: %d, Top: %d, Bottom: %d \n", buf_id, StrategyControl->stackTop, StrategyControl->stackBottom);
         	current->buf_id = buf_id;
         	if (StrategyControl->stackTop == ENTRY_NOT_IN_STACK)
         	{
@@ -169,7 +168,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         }
         else  // update
         {
-        	printf("Delete buf %d\n", buf_id);
+        	printf("Update buf: %d, Top: %d, Bottom: %d \n", buf_id, StrategyControl->stackTop, StrategyControl->stackBottom);
         	if (StrategyControl->stackTop == buf_id)
         	{
         		return;
@@ -416,7 +415,7 @@ StrategyShmemSize(void)
 	size = add_size(size, MAXALIGN(sizeof(BufferStrategyControl)));
 
 	/* cs3223 - size of the LRU stack */
-	size = add_size(size, mul_size(NBuffers, sizeof(LRUStackEntry)));
+	size = add_size(size, mul_size(NBuffers + 1, sizeof(LRUStackEntry)));
 
 	return size;
 }
@@ -487,7 +486,7 @@ StrategyInitialize(bool init)
 		Assert(!init);
 
 	/*************************** cs3223 ***********************/
-	LRUStack = (LRUStackEntry *)ShmemInitStruct("LRU stack", NBuffers * sizeof(LRUStackEntry), &stackFound);
+	LRUStack = (LRUStackEntry *)ShmemInitStruct("LRU stack", (NBuffers + 1) * sizeof(LRUStackEntry), &stackFound);
 	if(!stackFound)
 	{
 		/*
