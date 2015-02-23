@@ -304,6 +304,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		}
 		if(StrategyControl->stackTop == buf->buf_id)
 		{
+			UnlockBufHdr(buf);
 			elog(ERROR, "no unpinned buffers available");
 			return NULL;
 		}
