@@ -280,7 +280,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 			if (strategy != NULL)
 			{
 				AddBufferToRing(strategy, buf);
-				StrategyAdjustStack(buf->buf_id, false);
+				StrategyUpdateAccessedBuffer(buf->buf_id, false);
 			}
 			return buf;
 		}
@@ -298,7 +298,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 			if (strategy != NULL)
 			{
 				AddBufferToRing(strategy, buf);
-				StrategyAdjustStack(buf->buf_id, false);
+				StrategyUpdateAccessedBuffer(buf->buf_id, false);
 			}
 			return buf;
 		}
@@ -484,7 +484,7 @@ StrategyInitialize(bool init)
 		Assert(!init);
 
 	/*************************** cs3223 ***********************/
-	LRUStack = (StackEntry *)ShmemInitStruct("LRU stack", NBuffers * sizeof(StackEntry), &stackFound);
+	LRUStack = (LRUStackEntry *)ShmemInitStruct("LRU stack", NBuffers * sizeof(LRUStackEntry), &stackFound);
 	if(!stackFound)
 	{
 		/*
@@ -494,8 +494,7 @@ StrategyInitialize(bool init)
 		/*
 		 * initilize entries in LRUStack
 		 */
-		StackEntry *se;
-		se = LRUStack;
+		LRUStackEntry *se = LRUStack;
 		for(i = 0; i < NBuffers; se++, i++)
 		{
 			se->stack_next = ENTRY_NOT_IN_STACK;
