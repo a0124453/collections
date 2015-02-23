@@ -173,6 +173,10 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         	{
         		return;
         	}
+        	if (StrategyControl->stackBottom == buf_id)
+        	{
+        		StrategyControl->stackBottom = current->stack_prev;
+        	}
         	if (current->stack_prev != ENTRY_NOT_IN_STACK)
         	{
         		(&LRUStack[current->stack_prev])->stack_next = current->stack_next;
