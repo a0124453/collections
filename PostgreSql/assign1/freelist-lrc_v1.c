@@ -17,15 +17,7 @@
 #include "storage/buf_internals.h"
 #include "storage/bufmgr.h"
 
-/* Entry in LRU stack */
-typedef struct BufferLRUEntry
-{
-	struct BufferLRUEntry *prev;
-	struct BufferLRUEntry *next;
-	int            buf_id;
-} BufferLRUEntry;
-
-static BufferLRUEntry *LRUStack = NULL;
+static int *LRUStack;//array simulate doubly linked list
 
 /*
  * The shared freelist control information.
@@ -38,10 +30,8 @@ typedef struct
 	int			firstFreeBuffer;	/* Head of list of unused buffers */
 	int			lastFreeBuffer; /* Tail of list of unused buffers */
 
-    /* head and tail pointer for shared LRU stack */
-	BufferLRUEntry *head;
-	BufferLRUEntry *tail;
-
+	// end index of LRUStack
+	int			stackEnd;
 	/*
 	 * NOTE: lastFreeBuffer is undefined when firstFreeBuffer is -1 (that is,
 	 * when the list is empty)
@@ -101,7 +91,8 @@ typedef struct BufferAccessStrategyData
 static volatile BufferDesc *GetBufferFromRing(BufferAccessStrategy strategy);
 static void AddBufferToRing(BufferAccessStrategy strategy,
 				volatile BufferDesc *buf);
-
+void
+StrategyUpdateAccessedBuffer(int buf_id, bool delete);
 // cs3223
 // StrategyUpdateAccessedBuffer 
 // Called by bufmgr when a buffer page is accessed.
@@ -110,93 +101,52 @@ static void AddBufferToRing(BufferAccessStrategy strategy,
 void
 StrategyUpdateAccessedBuffer(int buf_id, bool delete)
 {
-    BufferLRUEntry *curr = StrategyControl->head;
-	while (curr != NULL)
-    {
-        if (curr->buf_id == buf_id)
-        {
-            break;
-        }
-    }
-    /* check against to be deleted or not */
-    if (curr == NULL && delete)
-    {
-        /* the buf_id to be deleted is not in the stack, do nothing */
-        return ;
-    }
-    else if (curr != NULL && delete)
-    {
-        /* delete the curr in the stack */
-        if (curr == StrategyControl->head)
-        {
-            StrategyControl->head = curr->next;
-        }
-        if (curr == StrategyControl->tail)
-        {
-            StrategyControl->tail = curr->prev;
-        }
-        if (curr->next != NULL)
-        {
-            curr->next->prev = curr->prev;
-        }
-        if (curr->prev != NULL)
-        {
-            curr->prev->next = curr->next;
-        }
-        return ;
-    }
-    /* to be inserted or updated */
-    if (curr == NULL)
-    {
-        /* to be inserted */
-        curr = (BufferLRUEntry *)&LRUStack[buf_id];
-        curr->buf_id = buf_id;
-        if (StrategyControl->head == NULL)
-        {
-            /* no entry in the stack yet, set head and tail */
-            curr->prev = NULL;
-            curr->next = NULL;
-            StrategyControl->head = curr;
-            StrategyControl->tail = curr;
-        }
-        else
-        {
-            /* place curr at the start of the stack */
-            curr->prev = NULL;
-            curr->next = StrategyControl->head;
-            StrategyControl->head->prev = curr;
-            StrategyControl->head = curr;
-        }
-        return ;
-    }
-    else
-    {
-        /* to be updated */
-        if (curr == StrategyControl->head)
-        {
-            /* nothing to be updated */
-            return ;
-        }
-
-        if (curr->next == NULL)
-        {
-            /* curr == tail case */
-            StrategyControl->tail = curr->prev;
-            curr->prev->next = curr->next;
-        }
-        else
-        {
-            /* curr in the middle case */
-            curr->prev->next = curr->next;
-            curr->next->prev = curr->prev;
-        }
-        /* update head pointer */
-        curr->prev = NULL;
-        curr->next = StrategyControl->head;
-        StrategyControl->head->prev = curr;
-        StrategyControl->head = curr;
-        return ;
-    }
+	int end = StrategyControl->stackEnd;
+	int i;//iterator
+	int j;//iterator or temp storage
+	bool has_bid = false;
+	
+	if(delete){
+		// search buf_id for match
+		for(i = 0; i <= end; i++){
+			// found requied buffer
+			if(LRUStack[i] == buf_id){
+				// close the gap
+				for(j = i; j < end; j++){
+					LRUStack[j] = LRUStack[j+1]; 
+				}
+				// free last
+				LRUStack[end] = -1;
+				// update end
+				StrategyControl->stackEnd = --end;
+				return;
+			}
+		}
+		// not found
+	}else{
+		for(i = 0; i <= end; i++){
+			if(LRUStack[i] == buf_id){
+				has_bid = true;
+				break;
+			}
+		}
+		//update case
+		if(has_bid){
+			j = LRUStack[i];
+			for(; i > 0; i--){
+				LRUStack[i] = LRUStack[i - 1];
+			}
+			LRUStack[0] = j;
+		// insert case
+		}else{
+			StrategyControl->stackEnd = ++end;
+			for(i = end; i > 0; i--){
+				LRUStack[i] = LRUStack[i - 1];
+			}
+			LRUStack[0] = buf_id;
+		}
+	}
+	printf("StrategyControl->stackEnd: %i\n",StrategyControl->stackEnd);
 }
 
 /*
@@ -221,7 +171,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 {
 	volatile BufferDesc *buf;
 	Latch	   *bgwriterLatch;
-    BufferLRUEntry *curr = StrategyControl->tail;
+    int			curr;
 
 	/*
 	 * If given a strategy object, see whether it can select a buffer. We
@@ -233,7 +183,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		if (buf != NULL)
 		{
 			// not essential
-			StrategyUpdateAccessedBuffer(buf->buf_id, false);
+			//StrategyUpdateAccessedBuffer(buf->buf_id, false);
 			*lock_held = false;
 			return buf;
 		}
@@ -291,32 +241,29 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		if (buf->refcount == 0)
 		{
 			if (strategy != NULL)
-			{
 				AddBufferToRing(strategy, buf);
-				StrategyUpdateAccessedBuffer(buf->buf_id, false);
-			}
+			StrategyUpdateAccessedBuffer(buf->buf_id, false);
 			return buf;
 		}
 		UnlockBufHdr(buf);
 	}
 
+	curr = StrategyControl->stackEnd;
 	/* Nothing on the freelist, so select one buf from the stack */
-	while (curr != NULL)
+	while (curr >= 0)
 	{
-		buf = &BufferDescriptors[curr->buf_id];
+		buf = &BufferDescriptors[LRUStack[curr]];
 
 		LockBufHdr(buf);
 		if (buf->refcount == 0)
 		{
 			if (strategy != NULL)
-            {
 				AddBufferToRing(strategy, buf);
-				StrategyUpdateAccessedBuffer(buf->buf_id, false);
-            }
+			StrategyUpdateAccessedBuffer(buf->buf_id, false);
 			return buf;
 		}
 		UnlockBufHdr(buf);
-		curr = curr->prev;
+		curr--;
 	}
 
     /* no available buf to replace */
@@ -418,8 +365,8 @@ StrategyShmemSize(void)
 	size = add_size(size, MAXALIGN(sizeof(BufferStrategyControl)));
 
 	/* initialize entries */
-	size = add_size(size, mul_size(NBuffers, 4));
-	//sizeof(BufferLRUEntry) = 4
+	size = add_size(size, mul_size(NBuffers,sizeof(int)));
+	//size of int array
 	return size;
 }
 
@@ -435,6 +382,7 @@ StrategyInitialize(bool init)
 {
 	bool		found;
 	bool        stackFound;
+	int			i;
 
 	/*
 	 * Initialize the shared buffer lookup hashtable.
@@ -470,9 +418,8 @@ StrategyInitialize(bool init)
 		StrategyControl->firstFreeBuffer = 0;
 		StrategyControl->lastFreeBuffer = NBuffers - 1;
 
-        /* initialize head and tail to be null */
-		StrategyControl->head = NULL;
-		StrategyControl->tail = NULL;
+        /* initialize stackEnd*/
+		StrategyControl->stackEnd = 0;
 
 		/* Initialize the clock sweep pointer */
 		StrategyControl->nextVictimBuffer = 0;
@@ -487,11 +434,14 @@ StrategyInitialize(bool init)
 	else
 		Assert(!init);
 
-	LRUStack = (BufferLRUEntry *)ShmemInitStruct("LRU stack", NBuffers * 4, &stackFound);
+	LRUStack = (int *)ShmemInitStruct("LRU stack", NBuffers * sizeof(int), &stackFound);
 	if (!stackFound)
 	{
 		Assert(init);
-		BufferLRUEntry * arr[NBuffers*4]; 
+		int arr[NBuffers];
+		for(i = 0; i < NBuffers; i++){
+			arr[i] = -1;
+		}
 		LRUStack = arr;
 	}
 	else
