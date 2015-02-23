@@ -117,7 +117,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
 	}
     if (delete)  // delete the entry
     {
-    	printf("Insert buf: %d, Top: %d, Bottom: %d \n", buf_id, StrategyControl->stackTop, StrategyControl->stackBottom);
+    	printf("Delete buf: %d, Top: %d, Bottom: %d \n", buf_id, StrategyControl->stackTop, StrategyControl->stackBottom);
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->buf_id == ENTRY_NOT_IN_STACK)
         {
@@ -311,6 +311,7 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		{
 			UnlockBufHdr(buf);
 			printf("Top: %d, Bottom: %d \n", StrategyControl->stackTop, StrategyControl->stackBottom);
+			printf("first free: %d; last free: %d\n", StrategyControl->firstFreeBuffer, StrategyControl->lastFreeBuffer);
 			elog(ERROR, "no unpinned buffers available");
 		}
 		UnlockBufHdr(buf);
@@ -341,6 +342,7 @@ StrategyFreeBuffer(volatile BufferDesc *buf)
 		if (buf->freeNext < 0)
 			StrategyControl->lastFreeBuffer = buf->buf_id;
 		StrategyControl->firstFreeBuffer = buf->buf_id;
+		printf("first free: %d; last free: %d\n", StrategyControl->firstFreeBuffer, StrategyControl->lastFreeBuffer);
 		/* cs3223 - delete it from LRU stack */
 		StrategyUpdateAccessedBuffer(buf->buf_id, true);
 	}
