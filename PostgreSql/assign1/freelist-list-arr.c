@@ -201,8 +201,9 @@ void printLRUStack()
     while (current != ENTRY_NOT_IN_STACK)
     {
         printf("%d ", (&LRUStack[current])->buf_id);
+        current = (&LRUStack[current])->stack_next;
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 
