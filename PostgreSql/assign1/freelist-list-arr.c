@@ -117,8 +117,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
 	}
     if (delete)  // delete the entry
     {
-    	printf("Delete buf: %d, Top: %d, Bottom: %d \n", buf_id, StrategyControl->stackTop, StrategyControl->stackBottom);
-        printLRUStack();
+    	printf("Delete buf: %d\n", buf_id);
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->buf_id == ENTRY_NOT_IN_STACK)
         {
@@ -149,8 +148,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->buf_id == ENTRY_NOT_IN_STACK)  // insert
         {
-        	printf("Insert buf: %d, Top: %d, Bottom: %d \n", buf_id, StrategyControl->stackTop, StrategyControl->stackBottom);
-            printLRUStack();
+        	printf("Insert buf: %d\n", buf_id);
         	current->buf_id = buf_id;
         	if (StrategyControl->stackTop == ENTRY_NOT_IN_STACK)
         	{
@@ -169,8 +167,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         }
         else  // update
         {
-        	printf("Update buf: %d, Top: %d, Bottom: %d \n", buf_id, StrategyControl->stackTop, StrategyControl->stackBottom);
-            printLRUStack();
+        	printf("Update buf: %d\n", buf_id);
         	if (StrategyControl->stackTop == buf_id)
         	{
         		return;
@@ -193,11 +190,13 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         	StrategyControl->stackTop = buf_id;
         }
     }
+    printLRUStack();
 }
 
 void printLRUStack()
 {
     int current = StrategyControl->stackTop;
+    printf("Stack: \n");
     while (current != ENTRY_NOT_IN_STACK)
     {
         printf("%d ", (&LRUStack[current])->buf_id);
