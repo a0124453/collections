@@ -117,7 +117,6 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
 	}
     if (delete)  // delete the entry
     {
-    	printf("Delete buf: %d\n", buf_id);
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->buf_id == ENTRY_NOT_IN_STACK)
         {
@@ -148,7 +147,6 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         LRUStackEntry *current = &LRUStack[buf_id];
         if (current->buf_id == ENTRY_NOT_IN_STACK)  // insert
         {
-        	printf("Insert buf: %d\n", buf_id);
         	current->buf_id = buf_id;
         	if (StrategyControl->stackTop == ENTRY_NOT_IN_STACK)
         	{
@@ -167,7 +165,6 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         }
         else  // update
         {
-        	printf("Update buf: %d\n", buf_id);
         	if (StrategyControl->stackTop == buf_id)
         	{
         		return;
@@ -190,7 +187,7 @@ StrategyUpdateAccessedBuffer(int buf_id, bool delete)
         	StrategyControl->stackTop = buf_id;
         }
     }
-    printLRUStack();
+    // printLRUStack();
 }
 
 void printLRUStack()
@@ -229,20 +226,6 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 	volatile BufferDesc *buf;
 	Latch	            *bgwriterLatch;
 	int                 iterator = StrategyControl->stackBottom; /* cs3223 */
-
-	/*
-	 * If given a strategy object, see whether it can select a buffer. We
-	 * assume strategy objects don't need the BufFreelistLock.
-	 */
-	if (strategy != NULL)
-	{
-		buf = GetBufferFromRing(strategy);
-		if (buf != NULL)
-		{
-			*lock_held = false;
-			return buf;
-		}
-	}
 
 	/* Nope, so lock the freelist */
 	*lock_held = true;
@@ -297,7 +280,6 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		{
 			if (strategy != NULL)
 			{
-				AddBufferToRing(strategy, buf);
 				StrategyUpdateAccessedBuffer(buf->buf_id, false);
 			}
 			return buf;
@@ -315,7 +297,6 @@ StrategyGetBuffer(BufferAccessStrategy strategy, bool *lock_held)
 		{
 			if (strategy != NULL)
 			{
-				AddBufferToRing(strategy, buf);
 				StrategyUpdateAccessedBuffer(buf->buf_id, false);
 			}
 			return buf;
@@ -355,7 +336,6 @@ StrategyFreeBuffer(volatile BufferDesc *buf)
 		if (buf->freeNext < 0)
 			StrategyControl->lastFreeBuffer = buf->buf_id;
 		StrategyControl->firstFreeBuffer = buf->buf_id;
-		printf("first free: %d; last free: %d\n", StrategyControl->firstFreeBuffer, StrategyControl->lastFreeBuffer);
 		/* cs3223 - delete it from LRU stack */
 		StrategyUpdateAccessedBuffer(buf->buf_id, true);
 	}
