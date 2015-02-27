@@ -113,7 +113,7 @@ static void AtProcExit_Buffers(int code, Datum arg);
 static int	rnode_comparator(const void *p1, const void *p2);
 
 // cs3223 
-extern void StrategyUpdateAccessedBuffer(int buf_id, bool delete);
+extern void StrategyUpdateAccessedBuffer(int buf_id, int caseNum);
 
 
 /*
@@ -633,7 +633,7 @@ BufferAlloc(SMgrRelation smgr, char relpersistence, ForkNumber forkNum,
 		// Update the LRU stack for the found buffer
 		// For simplicity, we use the bufFreelistLock for this update operation
 		LWLockAcquire(BufFreelistLock, LW_EXCLUSIVE);
-		StrategyUpdateAccessedBuffer(buf_id, false);
+		StrategyUpdateAccessedBuffer(buf_id, 1);
 		LWLockRelease(BufFreelistLock);
 		return buf;
 	}
