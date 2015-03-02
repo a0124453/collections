@@ -93,9 +93,15 @@ typedef struct BufferAccessStrategyData
 static volatile BufferDesc *GetBufferFromRing(BufferAccessStrategy strategy);// Pointer to BufferAccessStrategyData
 static void AddBufferToRing(BufferAccessStrategy strategy, volatile BufferDesc *buf);
 
-//CS3223
+// the function signiture is updated for take caseNum instead of delete
+// to better identify different situations
 void StrategyUpdateAccessedBuffer(int buf_id, int caseNum);
-//CS3223
+
+// cs3223
+// StrategyUpdateAccessedBuffer 
+// Called by bufmgr when a buffer page is accessed.
+// Adjusts the position of buffer (identified by buf_id) in the LRU stack if delete is false;
+// otherwise, delete buffer buf_id from the LRU stack.
 void StrategyUpdateAccessedBuffer(int buf_id, int caseNum)
 {
 	int			startIdx = StrategyControl->stackHead;
@@ -117,12 +123,12 @@ void StrategyUpdateAccessedBuffer(int buf_id, int caseNum)
 				LRUstack[i] = LRUstack[i+1];
 			}
 			LRUstack[startIdx] = j;
-			printf("C1,stack start idx: %i,shift buf%i to start\n",startIdx,j);
+			// printf("C1,stack start idx: %i,shift buf%i to start\n",startIdx,j);
 		}
 	}else if(caseNum == 2){
 		StrategyControl->stackHead = ++startIdx;
 		LRUstack[startIdx] = buf_id;
-		printf("C2,stackEnd idx:%i,insert buf%i to first\n",startIdx,buf_id);
+		// printf("C2,stackEnd idx:%i,insert buf%i to first\n",startIdx,buf_id);
 	}else if(caseNum == 3){
 		for(i = startIdx; i >= 0; i--){
 			if(LRUstack[i] == buf_id){
@@ -138,7 +144,7 @@ void StrategyUpdateAccessedBuffer(int buf_id, int caseNum)
 				LRUstack[i] = LRUstack[i+1];
 			}
 			LRUstack[startIdx] = j;
-			printf("C3,stack start idx: %i,shift buf%i to start\n",startIdx,j);
+			// printf("C3,stack start idx: %i,shift buf%i to start\n",startIdx,j);
 		}
 	}else if(caseNum == 4){
 		for(i = startIdx; i >= 0; i--){
@@ -155,7 +161,7 @@ void StrategyUpdateAccessedBuffer(int buf_id, int caseNum)
 			}
 			LRUstack[startIdx] = -1;
 			StrategyControl->stackHead = --startIdx;
-			printf("C4: free buf_id %i\n",buf_id);
+			// printf("C4: free buf_id %i\n",buf_id);
 		}
 	}else{
 		printf("Error!\n");
