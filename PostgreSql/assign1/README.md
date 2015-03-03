@@ -8,9 +8,13 @@ CS3223 assignment 1
 * Highlight of changes:
 
   ```C
-  //CS3223 Array Implemetation of LRU stack(tail-----------head)
-  //an array of size NBuffers to record the order of use of different buffers
+  // CS3223 Array Implemetation of LRU stack(tail-----------head)
+  // an array of size NBuffers to record the order of use of different buffers
   static int *LRUstack = NULL;
+  ```
+  ```C
+  // record LRUstack head index in BufferStrategyControl for easy access
+  typedef struct BufferStrategyControl;
   ```
 
   ```C
@@ -43,10 +47,17 @@ CS3223 assignment 1
   // order of use
   void StrategyUpdateAccessedBuffer(int buf_id, int caseNum)
   ```
+  
+  ```C
+  // change function prototype and function call parameter in bufmgr in order to handle C1.
+  extern void StrategyUpdateAccessedBuffer(int buf_id, int caseNum);
+  ```
 
 * Observation
   As it is shown in the results, clock implemention is faster than lru. In fact,
   based on the number of queries processed and transactions per second, clock is
   about 2 times faster than lru. Although 2 methods are both expected to run in
   O(n) time, clock will incur fewer disk access, which is very costly in terms 
-  of time, therefore saving much time.
+  of time, therefore saving much time. Besides, LRU replacement strategy seems has
+  higher hit ratio, most probably it exploits temporal locality and the test data
+  used tends to access recent data frequently.
