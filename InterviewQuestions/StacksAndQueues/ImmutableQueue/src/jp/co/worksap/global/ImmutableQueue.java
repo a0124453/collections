@@ -31,11 +31,11 @@ public class ImmutableQueue<E> {
     public ImmutableQueue<E> enqueue(E e) {
         checkElem(e);
         ImmutableQueue<E> queue = new ImmutableQueue<E>();
-        if (this.isEmpty()) {  // just create a list of 1 node
+        if (this.isEmpty()) {
             ListNode<E> ln = new ListNode<E>(e);
             queue._head = ln;
             queue._tail = ln;
-        } else if (this._tail.next == null) {  // just append the node to the list
+        } else if (this._tail.next == null) {
             ListNode<E> ln = new ListNode<E>(e);
             queue._head = this._head;
             this._tail.next = ln;
