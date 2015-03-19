@@ -1,0 +1,59 @@
+CS3223 ASSIGNMENT 2
+
+STUDENT NUMBER: A0105750N
+
+
+QUESTION 1
+Execution time for IS-b: 69.399 ms 
+Execution time for BIS-b: 61.144 ms
+Explanation for performance difference: The advantage of BIS lies in the power
+of sorting matching records before lookup, which most likely result in less
+and more sequential disk IO during lookup. So, BIS is faster than IS in this
+case.
+
+
+QUESTION 2
+Execution time for IS-cb: 154.001 ms
+Execution time for BIS-cb: 141.214 ms
+Explanation for performance difference: For cb_idx, 'c = 10' is a matching
+predicate therefore the scanning can be faster by making use of cb_idx. BIS is
+faster than IS because when comparing to IS, BIS' sorting in memory ensures
+that the disk IO access is less random, which reduce number of IO operations
+required, resulting a faster execution.
+
+
+QUESTION 3
+Execution time for BIS-b: 711.143 ms
+Execution time for IOS-b: 446.758 ms
+Execution time for IOS-cb: 581.016 ms
+Explanation for performance difference: The reason that BIS is significantly
+slower than the other 2 methods is that it requires RID lookup but in fact int
+this case, projection on attribute b can be done during selection. The disk IO
+incurred during RID lookup causes it to be much slower. As for IOS-cb, the
+database has to scan more pages when compared to IOS-b because cb_idx is
+larger than b_idx, resulting in more pages required for storage when number of
+records is fixed.
+
+
+QUESTION 4
+Execution time for BIS-cb: 7.088 ms
+Execution time for ABIS-b-c: 36.834 ms
+Explanation for performance difference: For query D, 'b = 9 AND c = 10' is the
+matching predicate for cb_idx and therefore, BIS-cb is faster than the two
+terms being filtered via BIS and then AND two results together which requires
+two RID lookups for each term.
+
+
+QUESTION 5
+Query: select * from r where (b = 0) and (c > 0)
+Execution time for IS-b: 57.025 ms
+Execution time for BIS-cb: 195.378 ms
+
+
+QUESTION 6
+Best query plan: BIS-cb
+Execution time for best plan: 103.752 ms
+Worst query plan: SS
+Execution time for worst plan: 532.703 ms
+
+

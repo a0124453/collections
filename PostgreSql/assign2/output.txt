@@ -11,23 +11,20 @@ SELECT dropdbbuffers('assign2');
  t
 (1 row)
 
-SET enable_bitmapscan = on; SET enable_indexscan = off;
+SET enable_bitmapscan = off; SET enable_indexscan = on;
 SET
 SET
 SET enable_indexonlyscan = off; SET enable_seqscan = off;
 SET
 SET
 EXPLAIN ANALYZE SELECT * FROM r WHERE b=9;
-                                                       QUERY PLAN                                                       
-------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=428.47..8065.40 rows=22715 width=32) (actual time=12.722..105.329 rows=10000 loops=1)
-   Recheck Cond: (b = 9)
-   Heap Blocks: exact=5468
-   ->  Bitmap Index Scan on b_idx  (cost=0.00..422.79 rows=22715 width=0) (actual time=8.723..8.723 rows=10000 loops=1)
-         Index Cond: (b = 9)
- Planning time: 13.209 ms
- Execution time: 107.629 ms
-(7 rows)
+                                                      QUERY PLAN                                                       
+-----------------------------------------------------------------------------------------------------------------------
+ Index Scan using b_idx on r  (cost=0.42..29956.05 rows=22715 width=32) (actual time=0.177..68.692 rows=10000 loops=1)
+   Index Cond: (b = 9)
+ Planning time: 17.216 ms
+ Execution time: 70.959 ms
+(4 rows)
 
 SELECT pg_sleep(2);
  pg_sleep 
@@ -54,20 +51,23 @@ SELECT dropdbbuffers('assign2');
  t
 (1 row)
 
-SET enable_bitmapscan = off; SET enable_indexscan = on; 
+SET enable_bitmapscan = on; SET enable_indexscan = off; 
 SET
 SET
 SET enable_indexonlyscan = off; SET enable_seqscan = off;
 SET
 SET
 EXPLAIN ANALYZE SELECT * FROM r WHERE b=9;
-                                                      QUERY PLAN                                                       
------------------------------------------------------------------------------------------------------------------------
- Index Scan using b_idx on r  (cost=0.42..29956.05 rows=22715 width=32) (actual time=0.092..44.228 rows=10000 loops=1)
-   Index Cond: (b = 9)
- Planning time: 0.196 ms
- Execution time: 46.306 ms
-(4 rows)
+                                                       QUERY PLAN                                                       
+------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on r  (cost=428.47..8065.40 rows=22715 width=32) (actual time=7.390..58.389 rows=10000 loops=1)
+   Recheck Cond: (b = 9)
+   Heap Blocks: exact=5468
+   ->  Bitmap Index Scan on b_idx  (cost=0.00..422.79 rows=22715 width=0) (actual time=5.113..5.113 rows=10000 loops=1)
+         Index Cond: (b = 9)
+ Planning time: 0.202 ms
+ Execution time: 60.423 ms
+(7 rows)
 
 SELECT pg_sleep(2);
  pg_sleep 
@@ -107,13 +107,13 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE c=10;
                                                          QUERY PLAN                                                         
 ----------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=1159.92..9137.92 rows=50000 width=32) (actual time=29.548..134.156 rows=50000 loops=1)
+ Bitmap Heap Scan on r  (cost=1159.92..9137.92 rows=50000 width=32) (actual time=29.445..122.831 rows=50000 loops=1)
    Recheck Cond: (c = 10)
    Heap Blocks: exact=7346
-   ->  Bitmap Index Scan on cb_idx  (cost=0.00..1147.42 rows=50000 width=0) (actual time=26.207..26.207 rows=50000 loops=1)
+   ->  Bitmap Index Scan on cb_idx  (cost=0.00..1147.42 rows=50000 width=0) (actual time=26.262..26.262 rows=50000 loops=1)
          Index Cond: (c = 10)
- Planning time: 0.538 ms
- Execution time: 143.685 ms
+ Planning time: 0.544 ms
+ Execution time: 131.745 ms
 (7 rows)
 
 ROLLBACK;
@@ -156,10 +156,10 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE c=10;
                                                        QUERY PLAN                                                        
 -------------------------------------------------------------------------------------------------------------------------
- Index Scan using cb_idx on r  (cost=0.42..31025.14 rows=50000 width=32) (actual time=0.070..147.419 rows=50000 loops=1)
+ Index Scan using cb_idx on r  (cost=0.42..31025.14 rows=50000 width=32) (actual time=0.072..144.072 rows=50000 loops=1)
    Index Cond: (c = 10)
- Planning time: 0.525 ms
- Execution time: 157.179 ms
+ Planning time: 0.563 ms
+ Execution time: 153.595 ms
 (4 rows)
 
 ROLLBACK;
@@ -198,13 +198,13 @@ SET
 EXPLAIN ANALYZE SELECT b FROM r WHERE b>9;
                                                            QUERY PLAN                                                           
 --------------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=10712.80..25214.81 rows=571920 width=8) (actual time=200.994..600.210 rows=570000 loops=1)
+ Bitmap Heap Scan on r  (cost=10712.80..25214.81 rows=571920 width=8) (actual time=199.038..597.982 rows=570000 loops=1)
    Recheck Cond: (b > 9)
    Heap Blocks: exact=7353
-   ->  Bitmap Index Scan on b_idx  (cost=0.00..10569.82 rows=571920 width=0) (actual time=197.819..197.819 rows=570000 loops=1)
+   ->  Bitmap Index Scan on b_idx  (cost=0.00..10569.82 rows=571920 width=0) (actual time=195.839..195.839 rows=570000 loops=1)
          Index Cond: (b > 9)
- Planning time: 1.090 ms
- Execution time: 697.981 ms
+ Planning time: 1.339 ms
+ Execution time: 699.162 ms
 (7 rows)
 
 SELECT pg_sleep(2);
@@ -241,11 +241,11 @@ SET
 EXPLAIN ANALYZE SELECT b FROM r WHERE b>9;
                                                                   QUERY PLAN                                                                  
 ----------------------------------------------------------------------------------------------------------------------------------------------
- Index Only Scan using b_idx on r  (cost=10000000000.42..10000016289.02 rows=571920 width=8) (actual time=0.907..331.784 rows=570000 loops=1)
+ Index Only Scan using b_idx on r  (cost=10000000000.42..10000016289.02 rows=571920 width=8) (actual time=1.145..328.678 rows=570000 loops=1)
    Index Cond: (b > 9)
    Heap Fetches: 0
- Planning time: 0.190 ms
- Execution time: 435.480 ms
+ Planning time: 0.187 ms
+ Execution time: 425.515 ms
 (5 rows)
 
 SELECT pg_sleep(2);
@@ -273,7 +273,7 @@ SELECT dropdbbuffers('assign2');
  t
 (1 row)
 
-SET enable_bitmapscan = off; SET enable_indexscan = off; 
+SET enable_bitmapscan = off; SET enable_indexscan = on; 
 SET
 SET
 SET enable_indexonlyscan = on; SET enable_seqscan = off;
@@ -284,13 +284,13 @@ BEGIN
 DROP index b_idx;
 DROP INDEX
 EXPLAIN ANALYZE SELECT b FROM r WHERE b>9;
-                                                        QUERY PLAN                                                         
----------------------------------------------------------------------------------------------------------------------------
- Seq Scan on r  (cost=10000000000.00..10000019853.00 rows=571920 width=8) (actual time=0.021..565.354 rows=570000 loops=1)
-   Filter: (b > 9)
-   Rows Removed by Filter: 430000
- Planning time: 0.691 ms
- Execution time: 661.593 ms
+                                                          QUERY PLAN                                                           
+-------------------------------------------------------------------------------------------------------------------------------
+ Index Only Scan using cb_idx on r  (cost=0.42..28631.62 rows=571920 width=8) (actual time=3.852..463.576 rows=570000 loops=1)
+   Index Cond: (b > 9)
+   Heap Fetches: 0
+ Planning time: 0.548 ms
+ Execution time: 565.702 ms
 (5 rows)
 
 ROLLBACK;
@@ -304,7 +304,7 @@ SELECT pg_sleep(2);
 SELECT relname, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit FROM pg_statio_all_tables WHERE relname = 'r';
  relname | heap_blks_read | heap_blks_hit | idx_blks_read | idx_blks_hit 
 ---------+----------------+---------------+---------------+--------------
- r       |           7353 |             0 |             0 |            0
+ r       |              1 |             0 |          3834 |            0
 (1 row)
 
 -- ---------------------------------Q4
@@ -329,13 +329,13 @@ SET
 EXPLAIN ANALYZE SELECT * FROM r WHERE b=9 AND c=10;
                                                      QUERY PLAN                                                      
 ---------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=32.07..3070.25 rows=1136 width=32) (actual time=0.424..4.270 rows=449 loops=1)
+ Bitmap Heap Scan on r  (cost=32.07..3070.25 rows=1136 width=32) (actual time=0.754..6.661 rows=449 loops=1)
    Recheck Cond: ((c = 10) AND (b = 9))
    Heap Blocks: exact=431
-   ->  Bitmap Index Scan on cb_idx  (cost=0.00..31.79 rows=1136 width=0) (actual time=0.274..0.274 rows=449 loops=1)
+   ->  Bitmap Index Scan on cb_idx  (cost=0.00..31.79 rows=1136 width=0) (actual time=0.487..0.487 rows=449 loops=1)
          Index Cond: ((c = 10) AND (b = 9))
- Planning time: 1.232 ms
- Execution time: 4.413 ms
+ Planning time: 1.135 ms
+ Execution time: 6.903 ms
 (7 rows)
 
 SELECT pg_sleep(2);
@@ -376,16 +376,16 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b=9 AND c=10;
                                                            QUERY PLAN                                                           
 --------------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=1351.03..4389.21 rows=1136 width=32) (actual time=29.133..33.099 rows=449 loops=1)
+ Bitmap Heap Scan on r  (cost=1351.03..4389.21 rows=1136 width=32) (actual time=32.018..35.847 rows=449 loops=1)
    Recheck Cond: ((b = 9) AND (c = 10))
    Heap Blocks: exact=431
-   ->  BitmapAnd  (cost=1351.03..1351.03 rows=1136 width=0) (actual time=28.939..28.939 rows=0 loops=1)
-         ->  Bitmap Index Scan on b_idx  (cost=0.00..422.79 rows=22715 width=0) (actual time=4.450..4.450 rows=10000 loops=1)
+   ->  BitmapAnd  (cost=1351.03..1351.03 rows=1136 width=0) (actual time=31.827..31.827 rows=0 loops=1)
+         ->  Bitmap Index Scan on b_idx  (cost=0.00..422.79 rows=22715 width=0) (actual time=8.039..8.039 rows=10000 loops=1)
                Index Cond: (b = 9)
-         ->  Bitmap Index Scan on c_idx  (cost=0.00..927.42 rows=50000 width=0) (actual time=21.676..21.676 rows=50000 loops=1)
+         ->  Bitmap Index Scan on c_idx  (cost=0.00..927.42 rows=50000 width=0) (actual time=21.166..21.166 rows=50000 loops=1)
                Index Cond: (c = 10)
- Planning time: 0.721 ms
- Execution time: 33.248 ms
+ Planning time: 0.612 ms
+ Execution time: 36.034 ms
 (10 rows)
 
 ROLLBACK;
@@ -428,12 +428,12 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b=9 AND c>0;
                                                       QUERY PLAN                                                      
 ----------------------------------------------------------------------------------------------------------------------
- Index Scan using b_idx on r  (cost=0.42..30012.84 rows=22715 width=32) (actual time=0.051..48.792 rows=9524 loops=1)
+ Index Scan using b_idx on r  (cost=0.42..30012.84 rows=22715 width=32) (actual time=0.080..54.497 rows=9524 loops=1)
    Index Cond: (b = 9)
    Filter: (c > 0)
    Rows Removed by Filter: 476
- Planning time: 0.849 ms
- Execution time: 50.819 ms
+ Planning time: 0.810 ms
+ Execution time: 56.767 ms
 (6 rows)
 
 ROLLBACK;
@@ -476,13 +476,13 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b=9 AND c>0;
                                                           QUERY PLAN                                                          
 ------------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=25418.10..33111.83 rows=22715 width=32) (actual time=142.764..192.847 rows=9524 loops=1)
+ Bitmap Heap Scan on r  (cost=25418.10..33111.83 rows=22715 width=32) (actual time=142.251..192.253 rows=9524 loops=1)
    Recheck Cond: ((c > 0) AND (b = 9))
    Heap Blocks: exact=5346
-   ->  Bitmap Index Scan on cb_idx  (cost=0.00..25412.42 rows=22715 width=0) (actual time=140.250..140.250 rows=9524 loops=1)
+   ->  Bitmap Index Scan on cb_idx  (cost=0.00..25412.42 rows=22715 width=0) (actual time=139.661..139.661 rows=9524 loops=1)
          Index Cond: ((c > 0) AND (b = 9))
- Planning time: 1.401 ms
- Execution time: 194.780 ms
+ Planning time: 1.409 ms
+ Execution time: 194.372 ms
 (7 rows)
 
 ROLLBACK;
@@ -525,12 +525,12 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                        QUERY PLAN                                                       
 ------------------------------------------------------------------------------------------------------------------------
- Index Scan using c_idx on r  (cost=0.42..30903.48 rows=28596 width=32) (actual time=0.115..102.068 rows=28544 loops=1)
+ Index Scan using c_idx on r  (cost=0.42..30903.48 rows=28596 width=32) (actual time=0.133..100.625 rows=28544 loops=1)
    Index Cond: (c = 10)
    Filter: (b > 9)
    Rows Removed by Filter: 21456
- Planning time: 2.036 ms
- Execution time: 107.963 ms
+ Planning time: 1.276 ms
+ Execution time: 106.063 ms
 (6 rows)
 
 ROLLBACK;
@@ -573,15 +573,15 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                         QUERY PLAN                                                        
 --------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=934.57..9037.57 rows=28596 width=32) (actual time=23.515..119.711 rows=28544 loops=1)
+ Bitmap Heap Scan on r  (cost=934.57..9037.57 rows=28596 width=32) (actual time=26.475..122.467 rows=28544 loops=1)
    Recheck Cond: (c = 10)
    Filter: (b > 9)
    Rows Removed by Filter: 21456
    Heap Blocks: exact=7346
-   ->  Bitmap Index Scan on c_idx  (cost=0.00..927.42 rows=50000 width=0) (actual time=20.325..20.325 rows=50000 loops=1)
+   ->  Bitmap Index Scan on c_idx  (cost=0.00..927.42 rows=50000 width=0) (actual time=23.288..23.288 rows=50000 loops=1)
          Index Cond: (c = 10)
- Planning time: 0.725 ms
- Execution time: 125.036 ms
+ Planning time: 0.876 ms
+ Execution time: 127.855 ms
 (9 rows)
 
 ROLLBACK;
@@ -626,12 +626,12 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                        QUERY PLAN                                                       
 ------------------------------------------------------------------------------------------------------------------------
- Index Scan using b_idx on r  (cost=0.42..47039.56 rows=28596 width=32) (actual time=0.123..763.238 rows=28544 loops=1)
+ Index Scan using b_idx on r  (cost=0.42..47039.56 rows=28596 width=32) (actual time=0.118..754.200 rows=28544 loops=1)
    Index Cond: (b > 9)
    Filter: (c = 10)
    Rows Removed by Filter: 541456
- Planning time: 0.650 ms
- Execution time: 769.075 ms
+ Planning time: 0.830 ms
+ Execution time: 759.729 ms
 (6 rows)
 
 ROLLBACK;
@@ -676,15 +676,15 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                            QUERY PLAN                                                           
 --------------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=10576.97..26508.77 rows=28596 width=32) (actual time=198.968..551.051 rows=28544 loops=1)
+ Bitmap Heap Scan on r  (cost=10576.97..26508.77 rows=28596 width=32) (actual time=196.987..561.528 rows=28544 loops=1)
    Recheck Cond: (b > 9)
    Filter: (c = 10)
    Rows Removed by Filter: 541456
    Heap Blocks: exact=7353
-   ->  Bitmap Index Scan on b_idx  (cost=0.00..10569.82 rows=571920 width=0) (actual time=195.740..195.740 rows=570000 loops=1)
+   ->  Bitmap Index Scan on b_idx  (cost=0.00..10569.82 rows=571920 width=0) (actual time=193.779..193.779 rows=570000 loops=1)
          Index Cond: (b > 9)
- Planning time: 0.823 ms
- Execution time: 556.693 ms
+ Planning time: 0.824 ms
+ Execution time: 567.030 ms
 (9 rows)
 
 ROLLBACK;
@@ -727,14 +727,14 @@ DROP INDEX
 DROP index b_idx;
 DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
-                                                      QUERY PLAN                                                       
------------------------------------------------------------------------------------------------------------------------
- Index Scan using c_idx on r  (cost=0.42..30903.48 rows=28596 width=32) (actual time=0.071..96.857 rows=28544 loops=1)
+                                                       QUERY PLAN                                                       
+------------------------------------------------------------------------------------------------------------------------
+ Index Scan using c_idx on r  (cost=0.42..30903.48 rows=28596 width=32) (actual time=0.113..101.410 rows=28544 loops=1)
    Index Cond: (c = 10)
    Filter: (b > 9)
    Rows Removed by Filter: 21456
- Planning time: 1.162 ms
- Execution time: 102.325 ms
+ Planning time: 1.247 ms
+ Execution time: 106.871 ms
 (6 rows)
 
 ROLLBACK;
@@ -779,15 +779,15 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                         QUERY PLAN                                                        
 --------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=934.57..9037.57 rows=28596 width=32) (actual time=28.051..125.948 rows=28544 loops=1)
+ Bitmap Heap Scan on r  (cost=934.57..9037.57 rows=28596 width=32) (actual time=21.586..117.954 rows=28544 loops=1)
    Recheck Cond: (c = 10)
    Filter: (b > 9)
    Rows Removed by Filter: 21456
    Heap Blocks: exact=7346
-   ->  Bitmap Index Scan on c_idx  (cost=0.00..927.42 rows=50000 width=0) (actual time=24.863..24.863 rows=50000 loops=1)
+   ->  Bitmap Index Scan on c_idx  (cost=0.00..927.42 rows=50000 width=0) (actual time=18.438..18.438 rows=50000 loops=1)
          Index Cond: (c = 10)
- Planning time: 0.570 ms
- Execution time: 131.338 ms
+ Planning time: 0.710 ms
+ Execution time: 123.231 ms
 (9 rows)
 
 ROLLBACK;
@@ -830,10 +830,10 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                        QUERY PLAN                                                        
 -------------------------------------------------------------------------------------------------------------------------
- Index Scan using cb_idx on r  (cost=0.42..30393.88 rows=28596 width=32) (actual time=0.070..107.637 rows=28544 loops=1)
+ Index Scan using cb_idx on r  (cost=0.42..30393.88 rows=28596 width=32) (actual time=0.071..107.301 rows=28544 loops=1)
    Index Cond: ((c = 10) AND (b > 9))
- Planning time: 1.557 ms
- Execution time: 113.104 ms
+ Planning time: 1.565 ms
+ Execution time: 112.899 ms
 (4 rows)
 
 ROLLBACK;
@@ -847,7 +847,7 @@ SELECT pg_sleep(2);
 SELECT relname, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit FROM pg_statio_all_tables WHERE relname = 'r';
  relname | heap_blks_read | heap_blks_hit | idx_blks_read | idx_blks_hit 
 ---------+----------------+---------------+---------------+--------------
- r       |           7346 |             0 |           139 |            0
+ r       |           7208 |         17834 |           114 |            0
 (1 row)
 
 -- ---------------------------------Q6
@@ -876,13 +876,13 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                         QUERY PLAN                                                         
 ---------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=737.53..8519.47 rows=28596 width=32) (actual time=19.958..95.087 rows=28544 loops=1)
+ Bitmap Heap Scan on r  (cost=737.53..8519.47 rows=28596 width=32) (actual time=22.136..97.502 rows=28544 loops=1)
    Recheck Cond: ((c = 10) AND (b > 9))
    Heap Blocks: exact=7208
-   ->  Bitmap Index Scan on cb_idx  (cost=0.00..730.38 rows=28596 width=0) (actual time=16.830..16.830 rows=28544 loops=1)
+   ->  Bitmap Index Scan on cb_idx  (cost=0.00..730.38 rows=28596 width=0) (actual time=19.003..19.003 rows=28544 loops=1)
          Index Cond: ((c = 10) AND (b > 9))
- Planning time: 0.869 ms
- Execution time: 100.416 ms
+ Planning time: 0.655 ms
+ Execution time: 103.310 ms
 (7 rows)
 
 ROLLBACK;
@@ -896,7 +896,7 @@ SELECT pg_sleep(2);
 SELECT relname, heap_blks_read, heap_blks_hit, idx_blks_read, idx_blks_hit FROM pg_statio_all_tables WHERE relname = 'r';
  relname | heap_blks_read | heap_blks_hit | idx_blks_read | idx_blks_hit 
 ---------+----------------+---------------+---------------+--------------
- r       |           7346 |             0 |           139 |            0
+ r       |           7208 |             0 |           113 |            0
 (1 row)
 
 -- ---------------------------------Q6
@@ -925,10 +925,10 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                        QUERY PLAN                                                        
 -------------------------------------------------------------------------------------------------------------------------
- Index Scan using cb_idx on r  (cost=0.42..30393.88 rows=28596 width=32) (actual time=0.071..104.883 rows=28544 loops=1)
+ Index Scan using cb_idx on r  (cost=0.42..30393.88 rows=28596 width=32) (actual time=0.077..107.715 rows=28544 loops=1)
    Index Cond: ((c = 10) AND (b > 9))
- Planning time: 1.804 ms
- Execution time: 110.430 ms
+ Planning time: 1.109 ms
+ Execution time: 113.299 ms
 (4 rows)
 
 ROLLBACK;
@@ -971,13 +971,13 @@ DROP INDEX
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                         QUERY PLAN                                                         
 ---------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on r  (cost=737.53..8519.47 rows=28596 width=32) (actual time=23.176..98.307 rows=28544 loops=1)
+ Bitmap Heap Scan on r  (cost=737.53..8519.47 rows=28596 width=32) (actual time=22.037..96.589 rows=28544 loops=1)
    Recheck Cond: ((c = 10) AND (b > 9))
    Heap Blocks: exact=7208
-   ->  Bitmap Index Scan on cb_idx  (cost=0.00..730.38 rows=28596 width=0) (actual time=20.033..20.033 rows=28544 loops=1)
+   ->  Bitmap Index Scan on cb_idx  (cost=0.00..730.38 rows=28596 width=0) (actual time=18.917..18.917 rows=28544 loops=1)
          Index Cond: ((c = 10) AND (b > 9))
- Planning time: 1.355 ms
- Execution time: 103.642 ms
+ Planning time: 0.864 ms
+ Execution time: 102.269 ms
 (7 rows)
 
 ROLLBACK;
@@ -1016,11 +1016,11 @@ SET
 EXPLAIN ANALYZE SELECT * FROM r WHERE b>9 AND c=10;
                                                 QUERY PLAN                                                
 ----------------------------------------------------------------------------------------------------------
- Seq Scan on r  (cost=0.00..22353.00 rows=28596 width=32) (actual time=0.054..551.045 rows=28544 loops=1)
+ Seq Scan on r  (cost=0.00..22353.00 rows=28596 width=32) (actual time=0.054..538.553 rows=28544 loops=1)
    Filter: ((b > 9) AND (c = 10))
    Rows Removed by Filter: 971456
- Planning time: 1.655 ms
- Execution time: 556.652 ms
+ Planning time: 1.358 ms
+ Execution time: 544.014 ms
 (5 rows)
 
 SELECT pg_sleep(2);
