@@ -4,12 +4,14 @@ STUDENT NUMBER: A0105750N
 
 
 QUESTION 1
-Execution time for IS-b: 69.399 ms 
-Execution time for BIS-b: 61.144 ms
-Explanation for performance difference: The advantage of BIS lies in the power
-of sorting matching records before lookup, which most likely result in less
-and more sequential disk IO during lookup. So, BIS is faster than IS in this
-case.
+Execution time for IS-b: 49.399 ms 
+Execution time for BIS-b: 62.144 ms
+Explanation for performance difference: Usually BIS can be more benefitial if
+a sufficiently hige proportion of the table is selected, resulting a more
+sequential scan than just index scan. However, if BIS does not result in a
+more sequencial scan of disk pages, the extra overhead involved in the process
+of sorting first will actually slow down the performance. So we see that in
+this case IS is faster without the overhead.
 
 
 QUESTION 2
@@ -19,7 +21,8 @@ Explanation for performance difference: For cb_idx, 'c = 10' is a matching
 predicate therefore the scanning can be faster by making use of cb_idx. BIS is
 faster than IS because when comparing to IS, BIS' sorting in memory ensures
 that the disk IO access is less random, which reduce number of IO operations
-required, resulting a faster execution.
+required, resulting a faster execution. And in this case, the overhead
+involved in sorting index first is smaller than the benefit of BIS.
 
 
 QUESTION 3
