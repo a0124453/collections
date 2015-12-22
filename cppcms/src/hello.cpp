@@ -3,6 +3,7 @@
 #include <cppcms/service.h>
 #include <cppcms/http_response.h>
 #include <iostream>
+#include "content.h"
 
 class hello : public cppcms::application {
 public:
@@ -15,12 +16,9 @@ public:
 
 void hello::main(std::string /*url*/)
 {
-    response().out() <<
-        "<html>\n"
-        "<body>\n"
-        "  <h1>Hello World</h1>\n"
-        "</body>\n"
-        "</html>\n";
+    content::message c;
+    c.text=">>>Hello<<<";
+    render("message",c);
 }
 
 int main(int argc,char ** argv)
