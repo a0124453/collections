@@ -7,7 +7,7 @@ using namespace std;
 
 void finish_with_error(MYSQL *con)
 {
-    cout << mysql_error(con) << endl;
+    cout << "Connection Error: " << mysql_error(con) << endl;
     mysql_close(con);
     exit(1);
 }
@@ -40,7 +40,8 @@ void insert_user(string nickname)
 {
     MYSQL *con = connect_to_mysql();
 
-    execute_query(con, "insert into users(nickname) values('" + nickname + "');");
+    string query = "insert into users(nickname) values('" + nickname + "');";
+    execute_query(con, query.c_str());
 
     mysql_close(con);
 }
@@ -49,8 +50,9 @@ void update_user(string username, string nickname)
 {
     MYSQL *con = connect_to_mysql();
 
-    execute_query(con, "update users set nickname = '" + nickname +
-        "' where username = " + username + ";");
+    string query = "update users set nickname = '" + nickname +
+        "' where username = " + username + ";"
+    execute_query(con, query.c_str());
 
     mysql_close(con);
 }
