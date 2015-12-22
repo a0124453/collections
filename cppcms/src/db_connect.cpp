@@ -1,62 +1,43 @@
-/* Standard C++ includes */
-#include <stdlib.h>
+#include <my_global.h>
+#include <mysql.h>
 #include <iostream>
-
-/*
-  Include directly the different
-  headers from cppconn/ and mysql_driver.h + mysql_util.h
-  (and mysql_connection.h). This will reduce your build time!
-*/
-#include "mysql_connection.h"
-
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
 
 using namespace std;
 
-int main(void)
+int main(int argc, char **argv)
 {
-    cout << endl;
-    cout << "Running 'SELECT 'Hello World!' »
-       AS _message'..." << endl;
+  MYSQL *con = mysql_init(NULL);
 
-    try {
-        sql::Driver *driver;
-        sql::Connection *con;
-        sql::Statement *stmt;
-        sql::ResultSet *res;
+  if (con == NULL)
+  {
+      cout << mysql_error(con) << endl;
+      exit(1);
+  }
 
-        /* Create a connection */
-        driver = get_driver_instance();
-        con = driver->connect("tcp://127.0.0.1:3306", "root", "root");
-        /* Connect to the MySQL test database */
-        con->setSchema("test");
+  if (mysql_real_connect(con, "localhost", "", "", NULL, 0, NULL, 0) == NULL)
+  {
+      finish_with_error(con);
+  }
 
-        stmt = con->createStatement();
-        res = stmt->executeQuery("SELECT 'Hello World!' AS _message");
-        while (res->next()) {
-            cout << "\t... MySQL replies: ";
-            /* Access column data by alias or column name */
-            cout << res->getString("_message") << endl;
-            cout << "\t... MySQL says it again: ";
-            /* Access column fata by numeric offset, 1 is the first column */
-            cout << res->getString(1) << endl;
-        }
-        delete res;
-        delete stmt;
-        delete con;
-    } catch (sql::SQLException &e) {
-        cout << "# ERR: SQLException in " << __FILE__;
-        cout << "(" << __FUNCTION__ << ") on line " »
-           << __LINE__ << endl;
-        cout << "# ERR: " << e.what();
-        cout << " (MySQL error code: " << e.getErrorCode();
-        cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+  execute_query(con, "use entry_db;".c_str());
+  execute_query(con, "insert into users(nickname) values(test3);".c_str());
+
+  mysql_close(con);
+
+  return 0;
+}
+
+void execute_query(MYSQL *con, char *query)
+{
+    if (mysql_query(con, query))
+    {
+        finish_with_error(con);
     }
+}
 
-    cout << endl;
-
-    return EXIT_SUCCESS;
+void finish_with_error(MYSQL *con)
+{
+    cout << mysql_error(con) << endl;
+    mysql_close(con);
+    exit(1);
 }
